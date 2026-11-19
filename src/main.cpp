@@ -5,9 +5,12 @@ int main() {
     // Allows better debugging
     SetTraceLogLevel(LOG_ALL);
 
+    // Set the configuration flag for a resizable window
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+
     // Initiating screen
-    int screenWidth = 800;
-    int screenHeight = 450;
+    float screenWidth = 800.0f;
+    float screenHeight = 450.0f;
     InitWindow(screenWidth, screenHeight, "Wtf am I doing?");
 
     if (!IsWindowReady()) {
@@ -18,8 +21,7 @@ int main() {
     // Unbids ESC from the default "Close Window" command
     SetExitKey(KEY_NULL);
 
-    // A way to apply shaders to the whole screen
-    RenderTexture2D target = LoadRenderTexture(screenWidth, screenHeight);
+    // Loading the program shader
     Shader shader = LoadShader(0, "resources/shader.fs");
 
     // Initiates the camera object
@@ -39,22 +41,22 @@ int main() {
     int spherePosLoc        = GetShaderLocation(shader, "u_spherePos");
     int radiusLoc        = GetShaderLocation(shader, "u_radius");
 
-    Vector3 lightPos  = (Vector3){ 10.0f, 16.0f, 10.0f };
+    Vector3 lightPos  = (Vector3){ 10.0f, 64.0f, 10.0f };
     Vector3 spherePos = (Vector3){ 10.0f, 0.0f, 10.0f };
     float radius = 8.0f;
 
     // Window loop
     while (!WindowShouldClose()) {
         // Allows focusing in and out of program
-        if (IsKeyPressed(KEY_ENTER)) {
-            DisableCursor();
-        }
-        if (IsKeyPressed(KEY_ESCAPE)) {
-            EnableCursor();
-        }
+        if (IsKeyPressed(KEY_ENTER)) DisableCursor();
+        if (IsKeyPressed(KEY_ESCAPE)) EnableCursor();
 
         // Updates camera
         UpdateCamera(&camera, CAMERA_FREE);
+
+        // Updates screen dimension data
+        screenWidth = GetScreenWidth();
+        screenHeight = GetScreenHeight();
 
         // Updates shader values
         // Camera related
@@ -78,18 +80,12 @@ int main() {
 
             // Shader that will apply for the whole screen
             BeginShaderMode(shader);
-                DrawTextureRec(
-                    target.texture,
-                    (Rectangle){ 0.0f, 0.0f, (float)target.texture.width, -(float)target.texture.height },
-                    (Vector2){ 0.0f, 0.0f },
-                    WHITE
-                );
+                DrawRectangle(0.0f, 0.0f, screenWidth, screenHeight, WHITE);
             EndShaderMode();
         EndDrawing();
     }
 
     // Exit safely
-    UnloadRenderTexture(target);
     UnloadShader(shader);
     CloseWindow();
     return 0;

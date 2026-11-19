@@ -1,8 +1,5 @@
 #version 330 core
 
-in vec2 fragTexCoord;
-in vec4 fragColor;
-
 uniform vec3 u_cameraPos;
 uniform vec3 u_cameraTarget;
 uniform float u_fov;
@@ -29,8 +26,7 @@ void main() {
     vec3 forward = normalize((u_cameraTarget - u_cameraPos));
 
     // Adjust to resolution
-    vec2 uv = (fragTexCoord * 2.0) - 1.0;
-    uv.x *= u_resolution.x / u_resolution.y;
+    vec2 uv = (gl_FragCoord.xy * 2.0 - u_resolution) / u_resolution.y;
 
     // Apply camera FOV
     float fovScale = tan(radians(u_fov) * 0.5);
@@ -54,9 +50,10 @@ void main() {
         
         // If hit the obiect, render it, else keeps marching
         if (dist < SURF_DIST) {
-            float distToLight = distance(dotPos, u_lightPos);
-            float difference = 1.0 - clamp(distToLight / 32.0f, 0.0, 1.0);
-            finalColor = vec4(difference, 0.0f, 0.0f, 1.0f);
+            vec3 normal = normalize(dotPos - u_spherePos);
+            vec3 lightDir = normalize(u_lightPos - dotPos);
+            float diff = max(dot(normal, lightDir), 0.1);
+            finalColor = vec4(diff, 0.0f, 0.0f, 1.0f);
             return;
         } else {
             dotPos += rayDir * dist;
