@@ -7,15 +7,15 @@ uniform vec3 u_cameraPos;
 uniform vec3 u_cameraTarget;
 uniform float u_fov;
 uniform vec2 u_resolution;
+uniform vec3 u_lightPos;
+uniform vec3 u_spherePos;
+uniform float u_radius;
 
 out vec4 finalColor;
 
 const int MAX_STEPS = 64;
 const float MAX_DIST = 256.0;
 const float SURF_DIST = 0.001;
-
-const vec3 SPHERE_POS = vec3(10.0f, 0.0f, 10.0f);
-const float RADIUS = 2.0;
 
 // Formula to know whether the point is inside or outside the object
 float sdfSphere(float radius, vec3 spherePos, vec3 dotPos) {
@@ -50,11 +50,13 @@ void main() {
     // Actual raymarching
     for (int steps = 0; steps < MAX_STEPS; steps++) {
         // Distance from sphere (currently the only prop in the world)
-        float dist = sdfSphere(RADIUS, SPHERE_POS, dotPos);
+        float dist = sdfSphere(u_radius, u_spherePos, dotPos);
         
         // If hit the obiect, render it, else keeps marching
         if (dist < SURF_DIST) {
-            finalColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+            float distToLight = distance(dotPos, u_lightPos);
+            float difference = 1.0 - clamp(distToLight / 32.0f, 0.0, 1.0);
+            finalColor = vec4(difference, 0.0f, 0.0f, 1.0f);
             return;
         } else {
             dotPos += rayDir * dist;

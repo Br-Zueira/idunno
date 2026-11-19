@@ -35,9 +35,13 @@ int main() {
     int camTargetLoc        = GetShaderLocation(shader, "u_cameraTarget");
     int screenDimensionsLoc = GetShaderLocation(shader, "u_resolution");
     int fovLoc              = GetShaderLocation(shader, "u_fov");
+    int lightPosLoc         = GetShaderLocation(shader, "u_lightPos");
+    int spherePosLoc        = GetShaderLocation(shader, "u_spherePos");
+    int radiusLoc        = GetShaderLocation(shader, "u_radius");
 
-    // Focus on window by default
-    DisableCursor();
+    Vector3 lightPos  = (Vector3){ 10.0f, 16.0f, 10.0f };
+    Vector3 spherePos = (Vector3){ 10.0f, 0.0f, 10.0f };
+    float radius = 8.0f;
 
     // Window loop
     while (!WindowShouldClose()) {
@@ -61,6 +65,11 @@ int main() {
         // Screen width and height
         Vector2 screenDimensions = { (float)screenWidth, (float)screenHeight };
         SetShaderValue(shader, screenDimensionsLoc, &screenDimensions, SHADER_UNIFORM_VEC2);
+
+        // Sphere and lighting
+        SetShaderValue(shader, lightPosLoc, &lightPos, SHADER_UNIFORM_VEC3);
+        SetShaderValue(shader, spherePosLoc, &spherePos, SHADER_UNIFORM_VEC3);
+        SetShaderValue(shader, radiusLoc, &radius, SHADER_UNIFORM_FLOAT);
 
         // Drawing loop
         BeginDrawing();
