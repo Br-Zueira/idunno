@@ -2,8 +2,10 @@
 #include <iostream>
 
 int main() {
+    // Allows better debugging
     SetTraceLogLevel(LOG_ALL);
 
+    // Initiating screen
     int screenWidth = 800;
     int screenHeight = 450;
     InitWindow(screenWidth, screenHeight, "Wtf am I doing?");
@@ -13,11 +15,14 @@ int main() {
         return 1;
     }
 
+    // Unbids ESC from the default "Close Window" command
     SetExitKey(KEY_NULL);
 
+    // A way to apply shaders to the whole screen
     RenderTexture2D target = LoadRenderTexture(screenWidth, screenHeight);
     Shader shader = LoadShader(0, "resources/shader.fs");
 
+    // Initiates the camera object
     Camera3D camera   = { 0 };
     camera.position   = (Vector3){ 0.0f, 2.0f, 5.0f };
     camera.target     = (Vector3){ 0.0f, 0.0f, 0.0f };
@@ -25,13 +30,18 @@ int main() {
     camera.fovy       = 45.0f;
     camera.projection = CAMERA_PERSPECTIVE;
 
-    int camPosLoc = GetShaderLocation(shader, "u_cameraPos");
-    int camTargetLoc = GetShaderLocation(shader, "u_cameraTarget");
-
+    // Locations for the unifomm variables
+    int camPosLoc           = GetShaderLocation(shader, "u_cameraPos");
+    int camTargetLoc        = GetShaderLocation(shader, "u_cameraTarget");
     int screenDimensionsLoc = GetShaderLocation(shader, "u_resolution");
-    int fovLoc = GetShaderLocation(shader, "u_fov");
+    int fovLoc              = GetShaderLocation(shader, "u_fov");
 
+    // Focus on window by default
+    DisableCursor();
+
+    // Window loop
     while (!WindowShouldClose()) {
+        // Allows focusing in and out of program
         if (IsKeyPressed(KEY_ENTER)) {
             DisableCursor();
         }
@@ -39,19 +49,25 @@ int main() {
             EnableCursor();
         }
 
+        // Updates camera
         UpdateCamera(&camera, CAMERA_FREE);
 
+        // Updates shader values
+        // Camera related
         SetShaderValue(shader, camPosLoc, &camera.position, SHADER_UNIFORM_VEC3);
         SetShaderValue(shader, camTargetLoc, &camera.target, SHADER_UNIFORM_VEC3);
+        SetShaderValue(shader, fovLoc, &camera.fovy, SHADER_UNIFORM_FLOAT);
 
+        // Screen width and height
         Vector2 screenDimensions = { (float)screenWidth, (float)screenHeight };
         SetShaderValue(shader, screenDimensionsLoc, &screenDimensions, SHADER_UNIFORM_VEC2);
 
-        SetShaderValue(shader, fovLoc, &camera.fovy, SHADER_UNIFORM_FLOAT);
-
+        // Drawing loop
         BeginDrawing();
+            // Cleans the last frame
             ClearBackground(BLACK);
 
+            // Shader that will apply for the whole screen
             BeginShaderMode(shader);
                 DrawTextureRec(
                     target.texture,
@@ -63,6 +79,7 @@ int main() {
         EndDrawing();
     }
 
+    // Exit safely
     UnloadRenderTexture(target);
     UnloadShader(shader);
     CloseWindow();
