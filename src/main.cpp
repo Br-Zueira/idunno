@@ -28,6 +28,9 @@ int main() {
     int camPosLoc = GetShaderLocation(shader, "u_cameraPos");
     int camTargetLoc = GetShaderLocation(shader, "u_cameraTarget");
 
+    int screenDimensionsLoc = GetShaderLocation(shader, "u_resolution");
+    int fovLoc = GetShaderLocation(shader, "u_fov");
+
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_ENTER)) {
             DisableCursor();
@@ -40,6 +43,11 @@ int main() {
 
         SetShaderValue(shader, camPosLoc, &camera.position, SHADER_UNIFORM_VEC3);
         SetShaderValue(shader, camTargetLoc, &camera.target, SHADER_UNIFORM_VEC3);
+
+        Vector2 screenDimensions = { (float)screenWidth, (float)screenHeight };
+        SetShaderValue(shader, screenDimensionsLoc, &screenDimensions, SHADER_UNIFORM_VEC2);
+
+        SetShaderValue(shader, fovLoc, &camera.fovy, SHADER_UNIFORM_FLOAT);
 
         BeginDrawing();
             ClearBackground(BLACK);
