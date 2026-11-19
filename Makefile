@@ -4,12 +4,14 @@ LDLIBS += $(shell pkg-config --libs raylib)
 SRCFILES = $(wildcard src/*.cpp)
 OUTDIR = out
 TARGET = $(OUTDIR)/bin
+RESOURCESDIR = resources
 
 build: $(TARGET)
 
 $(TARGET): $(SRCFILES)
 	mkdir -p $(OUTDIR)
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRCFILES) $(LDLIBS)
+	cp -r $(RESOURCESDIR) $(OUTDIR)/
 
 clean:
 	rm -rf $(OUTDIR)
