@@ -5,8 +5,8 @@ int main() {
     // Allows better debugging
     SetTraceLogLevel(LOG_ALL);
 
-    // Set the configuration flag for a resizable window
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    // Set the configuration flags
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
 
     // Initiating screen
     float screenWidth = 800.0f;
@@ -82,6 +82,8 @@ int main() {
             BeginShaderMode(shader);
                 DrawRectangle(0.0f, 0.0f, screenWidth, screenHeight, WHITE);
             EndShaderMode();
+
+            DrawFPS(10.0f, 10.0f);
         EndDrawing();
     }
 

@@ -43,21 +43,28 @@ void main() {
     // Used to know whether the ray should be discarded
     float traveledDistance = 0.0f;
 
+    // Gets whether camera is inside the sphere or not
+    bool isInside = sdfSphere(u_radius, u_spherePos, u_cameraPos) < 0.0f;
+    
     // Actual raymarching
     for (int steps = 0; steps < MAX_STEPS; steps++) {
         // Distance from sphere (currently the only prop in the world)
         float dist = sdfSphere(u_radius, u_spherePos, dotPos);
         
+        // If inside the sphere, march outward
+        if (isInside) dist = -dist;
+        
         // If hit the obiect, render it, else keeps marching
         if (dist < SURF_DIST) {
             vec3 normal = normalize(dotPos - u_spherePos);
+
             vec3 lightDir = normalize(u_lightPos - dotPos);
             float diff = max(dot(normal, lightDir), 0.1);
             finalColor = vec4(diff, 0.0f, 0.0f, 1.0f);
             return;
         } else {
-            dotPos += rayDir * dist;
-            traveledDistance += dist;
+            dotPos += rayDir * abs(dist);
+            traveledDistance += abs(dist);
         }
 
         // If the ray travelled too much without hitting anything, discard it
