@@ -56,8 +56,12 @@ float mapScene(vec3 p) {
     float sphereDist = sdfSphere(u_radius, u_spherePos, p);
     float cubeDist = sdfCube(vec3(2.0f, 4.0f, 6.0f), eulerToQuarternion(vec3(45.0f, 30.0f, 15.0f)), vec3(20.0f, 30.0f, 40.0f), p);
 
+    float cubeCarve = sdfCube(vec3(6.0f, 6.0f, 6.0f), vec4(0.0f, 0.0f, 0.0f, 1.0f), vec3(-20.0f, -20.0f, -20.0f), p);
+    float sphereHole = sdfSphere(6.0f, vec3(-20.0f, -14.0f, -20.0f), p);
+    float carvedProp = max(cubeCarve, -sphereHole);
+
     // Gets the distance to the nearest one
-    return min(sphereDist, cubeDist);        
+    return min(sphereDist, min(cubeDist, carvedProp));
 }
 
 // Automatically calculates the correct normal for any shape
