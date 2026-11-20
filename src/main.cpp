@@ -42,7 +42,7 @@ int main() {
     int radiusLoc        = GetShaderLocation(shader, "u_radius");
 
     Vector3 lightPos  = (Vector3){ 10.0f, 64.0f, 10.0f };
-    Vector3 spherePos = (Vector3){ 10.0f, 0.0f, 10.0f };
+    Vector3 spherePos = (Vector3){ 10.0f, 10.0f, 10.0f };
     float radius = 8.0f;
 
     // Window loop

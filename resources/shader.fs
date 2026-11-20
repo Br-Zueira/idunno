@@ -33,6 +33,10 @@ float sdfCube(vec3 scale, vec4 cubeOrientation, vec3 cubePos, vec3 dotPos) {
     return length(max(qBox, 0.0)) + min(max(qBox.x, max(qBox.y, qBox.z)), 0.0);
 }
 
+float sdfPlane(vec3 dotPos) {
+    return dotPos.y;
+}
+
 vec4 eulerToQuarternion(vec3 angles) {
     // Cos and sin versions of half the angles
     vec3 c = cos(angles * 0.5);
@@ -56,12 +60,14 @@ float mapScene(vec3 p) {
     float sphereDist = sdfSphere(u_radius, u_spherePos, p);
     float cubeDist = sdfCube(vec3(2.0f, 4.0f, 6.0f), eulerToQuarternion(vec3(45.0f, 30.0f, 15.0f)), vec3(20.0f, 30.0f, 40.0f), p);
 
-    float cubeCarve = sdfCube(vec3(6.0f, 6.0f, 6.0f), vec4(0.0f, 0.0f, 0.0f, 1.0f), vec3(-20.0f, -20.0f, -20.0f), p);
-    float sphereHole = sdfSphere(6.0f, vec3(-20.0f, -14.0f, -20.0f), p);
+    float cubeCarve = sdfCube(vec3(6.0f, 6.0f, 6.0f), vec4(0.0f, 0.0f, 0.0f, 1.0f), vec3(25.0f, 10.0f, 25.0f), p);
+    float sphereHole = sdfSphere(6.0f, vec3(25.0f, 16.0f, 25.0f), p);
     float carvedProp = max(cubeCarve, -sphereHole);
 
+    float planeDist = sdfPlane(p);
+
     // Gets the distance to the nearest one
-    return min(sphereDist, min(cubeDist, carvedProp));
+    return min(sphereDist, min(cubeDist, min(carvedProp, planeDist)));
 }
 
 // Automatically calculates the correct normal for any shape
