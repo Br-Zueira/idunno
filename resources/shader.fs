@@ -41,6 +41,35 @@ float sdfPlane(vec3 dotPos) {
     return abs(dotPos.y) - 0.25;
 }
 
+float sdfTesseract(vec4 scale, vec3 cubePos, float wFac, float wFac2, vec3 dotPos) {
+    // Transform dot coordinate into cube relative coordinates
+    vec3 p = dotPos - cubePos;
+
+    // Lift the 3D point into the 4th dimension, where W pos is dictated by time
+    vec4 p4 = vec4(p, 0.0f);
+
+    float angle = u_time * wFac;
+    float c = cos(angle);
+    float s = sin(angle);
+
+    // 1. Rotate in XW plane
+    vec4 temp = p4;
+    p4.x = c * temp.x - s * temp.w;
+    p4.w = s * temp.x + c * temp.w;
+
+    // 2. Rotate in YW plane (use a slightly offset angle for complex tumbling)
+    float angle2 = u_time * wFac2;
+    float c2 = cos(angle2);
+    float s2 = sin(angle2);
+    temp = p4;
+    p4.y = c2 * temp.y - s2 * temp.w;
+    p4.w = s2 * temp.y + c2 * temp.w;
+
+    // Almost standard 3D box SDF formula, but with 4D axis
+    vec4 d = abs(p4) - scale;
+    return length(max(d, 0.0)) + min(max(d.x, max(d.y, max(d.z, d.w))), 0.0);
+}
+
 vec4 eulerToQuarternion(vec3 angles) {
     vec3 rads = radians(angles);
 
@@ -92,14 +121,18 @@ vec4 mapScene(vec3 p) {
     // Carves the cubes from the grid
     float grid = max(planeDist, -cubicHoles);
 
+    // Tesseract where dot moves into w axis according to time
+    float tesseract = sdfTesseract(vec4(8.0f), vec3(-20.0f, 15.0f, -5.0f), 0.5f, 0.75f, p);
+
     // Edit HERE and above to add new props
-    const int propQuantity = 4;
+    const int propQuantity = 5;
     vec4 distList[propQuantity] = vec4[propQuantity](
         vec4(1.0, 0.0, 0.0, sphereDist), 
         vec4(0.0, 1.0, 1.0, cubeDist), 
         vec4(1.0, 0.0, 1.0, carvedProp),
-        vec4(1.0, 1.0, 1.0, grid)
-        );
+        vec4(1.0, 1.0, 1.0, grid),
+        vec4(0.0, 1.0, 0.0, tesseract)
+    );
 
     // Chooses the nearest distance and returns it
     vec4 closestProp = vec4(0.0, 0.0, 0.0, MAX_DIST + 1);

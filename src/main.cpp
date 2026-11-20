@@ -1,5 +1,6 @@
 #include <raylib.h>
 #include <iostream>
+#include <cmath>
 
 int main() {
     // Allows better debugging
