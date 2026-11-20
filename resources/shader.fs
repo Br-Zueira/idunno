@@ -66,8 +66,20 @@ float mapScene(vec3 p) {
 
     float planeDist = sdfPlane(p);
 
-    // Gets the distance to the nearest one
-    return min(sphereDist, min(cubeDist, min(carvedProp, planeDist)));
+    // Edit HERE and above to add new props
+    const int propQuantity = 4;
+    float distList[propQuantity] = float[propQuantity](
+        sphereDist, cubeDist, carvedProp, planeDist
+        );
+
+    // Chooses the nearest distance and returns it
+    float smallestDist = MAX_DIST + 1;
+
+    for (int i = 0; i < propQuantity; i++) {
+        smallestDist = min(smallestDist, distList[i]);
+    } 
+
+    return smallestDist;
 }
 
 // Automatically calculates the correct normal for any shape
