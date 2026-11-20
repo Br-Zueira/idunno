@@ -34,7 +34,7 @@ float sdfCube(vec3 scale, vec4 cubeOrientation, vec3 cubePos, vec3 dotPos) {
 }
 
 float sdfPlane(vec3 dotPos) {
-    return dotPos.y;
+    return abs(dotPos.y) - 0.25;
 }
 
 vec4 eulerToQuarternion(vec3 angles) {
@@ -64,7 +64,18 @@ vec4 mapScene(vec3 p) {
     float sphereHole = sdfSphere(6.0f, vec3(25.0f, 16.0f, 25.0f), p);
     float carvedProp = max(cubeCarve, -sphereHole);
 
+    vec3 q = p;
+    vec2 spacing = vec2(4.5, 4.5);
+    q.x = p.x - spacing.x * round(p.x / spacing.x);
+    q.z = p.z - spacing.y * round(p.z / spacing.y);
     float planeDist = sdfPlane(p);
+    float cubicHoles = sdfCube(
+        vec3(2.0, 1.0, 2.0), // Size of each cube
+        vec4(0.0, 0.0, 0.0, 1.0), // Orientation
+        vec3(0.0, 0.0, 0.0),
+        q
+    );
+    float grid = max(planeDist, -cubicHoles);
 
     // Edit HERE and above to add new props
     const int propQuantity = 4;
@@ -72,7 +83,7 @@ vec4 mapScene(vec3 p) {
         vec4(1.0, 0.0, 0.0, sphereDist), 
         vec4(0.0, 1.0, 1.0, cubeDist), 
         vec4(1.0, 0.0, 1.0, carvedProp),
-        vec4(1.0, 1.0, 1.0, planeDist)
+        vec4(1.0, 1.0, 1.0, grid)
         );
 
     // Chooses the nearest distance and returns it
