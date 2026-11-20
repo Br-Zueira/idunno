@@ -11,7 +11,7 @@ uniform float u_radius;
 out vec4 finalColor;
 
 const int MAX_STEPS = 64;
-const float MAX_DIST = 256.0;
+const float MAX_DIST = 300.0;
 const float SURF_DIST = 0.001;
 
 // Formula to know whether the point is inside or outside the object
@@ -163,7 +163,7 @@ void main() {
 
             // Fog effect
             vec3 fogColor = vec3(0.0);
-            float fogFactor = exp(-traveledDistance * 0.005);
+            float fogFactor = exp(-traveledDistance * 0.02);
             vec3 finalSceneColor = mix(fogColor, color, fogFactor);
 
             finalColor = vec4(finalSceneColor, 1.0);
