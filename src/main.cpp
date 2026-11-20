@@ -86,8 +86,9 @@ int main() {
         SetShaderValue(shader, radiusLoc, &radius, SHADER_UNIFORM_FLOAT);
 
         // Misc
-        float time = GetTime();
-        SetShaderValue(shader, timeLoc, &time, SHADER_UNIFORM_FLOAT);
+        double time = GetTime();
+        float safeTime = (float)fmod(time, 3600);
+        SetShaderValue(shader, timeLoc, &safeTime, SHADER_UNIFORM_FLOAT);
 
         // Texture loop
         BeginTextureMode(target);
