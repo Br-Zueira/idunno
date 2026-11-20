@@ -24,9 +24,12 @@ float sdfCube(vec3 scale, vec4 cubeOrientation, vec3 cubePos, vec3 dotPos) {
     // Transform dot coordinate into cube relative coordinates
     vec3 p = dotPos - cubePos;
 
-    // Rotate point location instead of rotating the cube itself
-    vec4 invRot = vec4(-cubeOrientation.xyz, cubeOrientation.w);
-    p = p + 2.0 * cross(invRot.xyz, cross(invRot.xyz, p) + invRot.w * p);
+    // Optimization (ignores rotation if the cube is axis aligned)
+    if (cubeOrientation != vec4(0.0f)) {
+        // Rotate point location instead of rotating the cube itself
+        vec4 invRot = vec4(-cubeOrientation.xyz, cubeOrientation.w);
+        p = p + 2.0 * cross(invRot.xyz, cross(invRot.xyz, p) + invRot.w * p);
+    }
 
     // The actual SDF formula, ask to Inigo Quilez how this works because I dunno
     vec3 qBox = abs(p) - scale;
@@ -61,7 +64,7 @@ vec4 mapScene(vec3 p) {
     float cubeDist = sdfCube(vec3(2.0f, 4.0f, 6.0f), eulerToQuarternion(vec3(45.0f, 30.0f, 15.0f)), vec3(20.0f, 30.0f, 40.0f), p);
 
     // Cube with a rounded hole
-    float cubeCarve = sdfCube(vec3(6.0f, 6.0f, 6.0f), vec4(0.0f, 0.0f, 0.0f, 1.0f), vec3(25.0f, 10.0f, 25.0f), p);
+    float cubeCarve = sdfCube(vec3(6.0f, 6.0f, 6.0f), vec4(0.0f), vec3(25.0f, 10.0f, 25.0f), p);
     float sphereHole = sdfSphere(6.0f, vec3(25.0f, 16.0f, 25.0f), p);
     float carvedProp = max(cubeCarve, -sphereHole);
 
@@ -75,7 +78,7 @@ vec4 mapScene(vec3 p) {
     q.z = p.z - spacing.y * round(p.z / spacing.y);
     float cubicHoles = sdfCube(
         vec3(2.0, 0.5, 2.0), // Size of each cube
-        vec4(0.0, 0.0, 0.0, 1.0), // Orientation
+        vec4(0.0f), // Orientation
         vec3(0.0, 0.0, 0.0),
         q
     );
@@ -106,14 +109,12 @@ vec4 mapScene(vec3 p) {
 
 // Automatically calculates the correct normal for any shape
 vec3 calcNormal(vec3 p) {
-    float d = mapScene(p).w;
-    vec2 e = vec2(0.001, 0.0); // Small offset
-    
-    vec3 n = d - vec3(
-        mapScene(p - e.xyy).w,
-        mapScene(p - e.yxy).w,
-        mapScene(p - e.yyx).w
-    );
+    vec3 n = vec3(0.0);
+    for (int i = 0; i < 4; i++) {
+        // Generates 4 symmetrical tetrahedron offset vectors
+        vec3 e = 0.5773 * (2.0 * vec3(((i + 3) >> 1) & 1, (i >> 1) & 1, i & 1) - 1.0);
+        n += e * mapScene(p + e * 0.001).w;
+    }
     
     return normalize(n);
 }
