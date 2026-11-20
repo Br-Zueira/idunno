@@ -55,7 +55,7 @@ vec4 eulerToQuarternion(vec3 angles) {
 }
 
 // Returns the distance to the nearest prop
-float mapScene(vec3 p) {
+vec4 mapScene(vec3 p) {
     // All scene props
     float sphereDist = sdfSphere(u_radius, u_spherePos, p);
     float cubeDist = sdfCube(vec3(2.0f, 4.0f, 6.0f), eulerToQuarternion(vec3(45.0f, 30.0f, 15.0f)), vec3(20.0f, 30.0f, 40.0f), p);
@@ -68,29 +68,34 @@ float mapScene(vec3 p) {
 
     // Edit HERE and above to add new props
     const int propQuantity = 4;
-    float distList[propQuantity] = float[propQuantity](
-        sphereDist, cubeDist, carvedProp, planeDist
+    vec4 distList[propQuantity] = vec4[propQuantity](
+        vec4(1.0, 0.0, 0.0, sphereDist), 
+        vec4(0.0, 1.0, 1.0, cubeDist), 
+        vec4(1.0, 0.0, 1.0, carvedProp),
+        vec4(1.0, 1.0, 1.0, planeDist)
         );
 
     // Chooses the nearest distance and returns it
-    float smallestDist = MAX_DIST + 1;
+    vec4 closestProp = vec4(0.0, 0.0, 0.0, MAX_DIST + 1);
 
     for (int i = 0; i < propQuantity; i++) {
-        smallestDist = min(smallestDist, distList[i]);
+        if (distList[i].w < closestProp.w) {
+            closestProp = distList[i];
+        }
     } 
 
-    return smallestDist;
+    return closestProp;
 }
 
 // Automatically calculates the correct normal for any shape
 vec3 calcNormal(vec3 p) {
-    float d = mapScene(p);
+    float d = mapScene(p).w;
     vec2 e = vec2(0.001, 0.0); // Small offset
     
     vec3 n = d - vec3(
-        mapScene(p - e.xyy),
-        mapScene(p - e.yxy),
-        mapScene(p - e.yyx)
+        mapScene(p - e.xyy).w,
+        mapScene(p - e.yxy).w,
+        mapScene(p - e.yyx).w
     );
     
     return normalize(n);
@@ -120,12 +125,13 @@ void main() {
     float traveledDistance = 0.0f;
 
     // Gets whether camera is inside a prop
-    bool isInside = mapScene(u_cameraPos) < 0.0f;
+    bool isInside = mapScene(u_cameraPos).w < 0.0f;
     
     // Actual raymarching
     for (int steps = 0; steps < MAX_STEPS; steps++) {
         // Gets the smallest distance from any prop in the world
-        float dist = mapScene(dotPos);
+        vec4 nearestProp = mapScene(dotPos);
+        float dist = nearestProp.w;
         
         // If inside the sphere, march outward
         if (isInside) dist = -dist;
@@ -136,7 +142,7 @@ void main() {
 
             vec3 lightDir = normalize(u_lightPos - dotPos);
             float diff = max(dot(normal, lightDir), 0.1);
-            finalColor = vec4(diff, 0.0f, 0.0f, 1.0f);
+            finalColor = vec4(nearestProp.xyz * diff, 1.0);
             return;
         } else {
             dotPos += rayDir * abs(dist);
