@@ -45,6 +45,7 @@ int main() {
     int lightPosLoc         = GetShaderLocation(shader, "u_lightPos");
     int spherePosLoc        = GetShaderLocation(shader, "u_spherePos");
     int radiusLoc           = GetShaderLocation(shader, "u_radius");
+    int timeLoc             = GetShaderLocation(shader, "u_time");
 
     Vector3 lightPos  = (Vector3){ 10.0f, 64.0f, 10.0f };
     Vector3 spherePos = (Vector3){ 10.0f, 10.0f, 10.0f };
@@ -83,6 +84,10 @@ int main() {
         SetShaderValue(shader, lightPosLoc, &lightPos, SHADER_UNIFORM_VEC3);
         SetShaderValue(shader, spherePosLoc, &spherePos, SHADER_UNIFORM_VEC3);
         SetShaderValue(shader, radiusLoc, &radius, SHADER_UNIFORM_FLOAT);
+
+        // Misc
+        float time = GetTime();
+        SetShaderValue(shader, timeLoc, &time, SHADER_UNIFORM_FLOAT);
 
         // Texture loop
         BeginTextureMode(target);

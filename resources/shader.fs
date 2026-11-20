@@ -7,6 +7,7 @@ uniform vec2 u_resolution;
 uniform vec3 u_lightPos;
 uniform vec3 u_spherePos;
 uniform float u_radius;
+uniform float u_time;
 
 out vec4 finalColor;
 
@@ -41,9 +42,11 @@ float sdfPlane(vec3 dotPos) {
 }
 
 vec4 eulerToQuarternion(vec3 angles) {
+    vec3 rads = radians(angles);
+
     // Cos and sin versions of half the angles
-    vec3 c = cos(angles * 0.5);
-    vec3 s = sin(angles * 0.5);
+    vec3 c = cos(rads * 0.5);
+    vec3 s = sin(rads * 0.5);
 
     // The quaternion itself, currently empty
     vec4 q;
@@ -61,7 +64,10 @@ vec4 eulerToQuarternion(vec3 angles) {
 vec4 mapScene(vec3 p) {
     // All scene props
     float sphereDist = sdfSphere(u_radius, u_spherePos, p);
-    float cubeDist = sdfCube(vec3(2.0f, 4.0f, 6.0f), eulerToQuarternion(vec3(45.0f, 30.0f, 15.0f)), vec3(20.0f, 30.0f, 40.0f), p);
+
+    // Make the cube rotate in all axis
+    float rotFac = u_time * 60.0f;
+    float cubeDist = sdfCube(vec3(2.0f, 4.0f, 6.0f), eulerToQuarternion(vec3(rotFac + 45.0f, rotFac, rotFac + 15.0f)), vec3(20.0f, 30.0f, 40.0f), p);
 
     // Cube with a rounded hole
     float cubeCarve = sdfCube(vec3(6.0f, 6.0f, 6.0f), vec4(0.0f), vec3(25.0f, 10.0f, 25.0f), p);
