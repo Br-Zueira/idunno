@@ -20,6 +20,60 @@ float sdfSphere(float radius, vec3 spherePos, vec3 dotPos) {
     return dist - radius;
 }
 
+float sdfCube(vec3 scale, vec4 cubeOrientation, vec3 cubePos, vec3 dotPos) { 
+    // Transform dot coordinate into cube relative coordinates
+    vec3 p = dotPos - cubePos;
+
+    // Rotate point location instead of rotating the cube itself
+    vec4 invRot = vec4(-cubeOrientation.xyz, cubeOrientation.w);
+    p = p + 2.0 * cross(invRot.xyz, cross(invRot.xyz, p) + invRot.w * p);
+
+    // The actual SDF formula, ask to Inigo Quilez how this works because I dunno
+    vec3 qBox = abs(p) - scale;
+    return length(max(qBox, 0.0)) + min(max(qBox.x, max(qBox.y, qBox.z)), 0.0);
+}
+
+vec4 eulerToQuarternion(vec3 angles) {
+    // Cos and sin versions of half the angles
+    vec3 c = cos(angles * 0.5);
+    vec3 s = sin(angles * 0.5);
+
+    // The quaternion itself, currently empty
+    vec4 q;
+
+    // Some crazy ass conversion math
+    q.x = s.x * c.y * c.z - c.x * s.y * s.z;
+    q.y = c.x * s.y * c.z + s.x * c.y * s.z;
+    q.z = c.x * c.y * s.z - s.x * s.y * c.z;
+    q.w = c.x * c.y * c.z + s.x * s.y * s.z;
+
+    return q;
+}
+
+// Returns the distance to the nearest prop
+float mapScene(vec3 p) {
+    // All scene props
+    float sphereDist = sdfSphere(u_radius, u_spherePos, p);
+    float cubeDist = sdfCube(vec3(2.0f, 4.0f, 6.0f), eulerToQuarternion(vec3(45.0f, 30.0f, 15.0f)), vec3(20.0f, 30.0f, 40.0f), p);
+
+    // Gets the distance to the nearest one
+    return min(sphereDist, cubeDist);        
+}
+
+// Automatically calculates the correct normal for any shape
+vec3 calcNormal(vec3 p) {
+    float d = mapScene(p);
+    vec2 e = vec2(0.001, 0.0); // Small offset
+    
+    vec3 n = d - vec3(
+        mapScene(p - e.xyy),
+        mapScene(p - e.yxy),
+        mapScene(p - e.yyx)
+    );
+    
+    return normalize(n);
+}
+
 void main() {
     // Where the point is and to where it must go
     vec3 dotPos = u_cameraPos;
@@ -43,20 +97,20 @@ void main() {
     // Used to know whether the ray should be discarded
     float traveledDistance = 0.0f;
 
-    // Gets whether camera is inside the sphere or not
-    bool isInside = sdfSphere(u_radius, u_spherePos, u_cameraPos) < 0.0f;
+    // Gets whether camera is inside a prop
+    bool isInside = mapScene(u_cameraPos) < 0.0f;
     
     // Actual raymarching
     for (int steps = 0; steps < MAX_STEPS; steps++) {
-        // Distance from sphere (currently the only prop in the world)
-        float dist = sdfSphere(u_radius, u_spherePos, dotPos);
+        // Gets the smallest distance from any prop in the world
+        float dist = mapScene(dotPos);
         
         // If inside the sphere, march outward
         if (isInside) dist = -dist;
         
         // If hit the obiect, render it, else keeps marching
         if (dist < SURF_DIST) {
-            vec3 normal = normalize(dotPos - u_spherePos);
+            vec3 normal = calcNormal(dotPos);
 
             vec3 lightDir = normalize(u_lightPos - dotPos);
             float diff = max(dot(normal, lightDir), 0.1);
