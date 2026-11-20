@@ -60,21 +60,27 @@ vec4 mapScene(vec3 p) {
     float sphereDist = sdfSphere(u_radius, u_spherePos, p);
     float cubeDist = sdfCube(vec3(2.0f, 4.0f, 6.0f), eulerToQuarternion(vec3(45.0f, 30.0f, 15.0f)), vec3(20.0f, 30.0f, 40.0f), p);
 
+    // Cube with a rounded hole
     float cubeCarve = sdfCube(vec3(6.0f, 6.0f, 6.0f), vec4(0.0f, 0.0f, 0.0f, 1.0f), vec3(25.0f, 10.0f, 25.0f), p);
     float sphereHole = sdfSphere(6.0f, vec3(25.0f, 16.0f, 25.0f), p);
     float carvedProp = max(cubeCarve, -sphereHole);
 
+    // Grid modelation process:
+    float planeDist = sdfPlane(p);
+
+    // Repeats cubes infinitely
     vec3 q = p;
     vec2 spacing = vec2(4.5, 4.5);
     q.x = p.x - spacing.x * round(p.x / spacing.x);
     q.z = p.z - spacing.y * round(p.z / spacing.y);
-    float planeDist = sdfPlane(p);
     float cubicHoles = sdfCube(
-        vec3(2.0, 1.0, 2.0), // Size of each cube
+        vec3(2.0, 0.5, 2.0), // Size of each cube
         vec4(0.0, 0.0, 0.0, 1.0), // Orientation
         vec3(0.0, 0.0, 0.0),
         q
     );
+    
+    // Carves the cubes from the grid
     float grid = max(planeDist, -cubicHoles);
 
     // Edit HERE and above to add new props
@@ -149,11 +155,18 @@ void main() {
         
         // If hit the obiect, render it, else keeps marching
         if (dist < SURF_DIST) {
+            // Lighting calc
             vec3 normal = calcNormal(dotPos);
-
             vec3 lightDir = normalize(u_lightPos - dotPos);
             float diff = max(dot(normal, lightDir), 0.1);
-            finalColor = vec4(nearestProp.xyz * diff, 1.0);
+            vec3 color = nearestProp.xyz * diff;
+
+            // Fog effect
+            vec3 fogColor = vec3(0.0);
+            float fogFactor = exp(-traveledDistance * 0.005);
+            vec3 finalSceneColor = mix(fogColor, color, fogFactor);
+
+            finalColor = vec4(finalSceneColor, 1.0);
             return;
         } else {
             dotPos += rayDir * abs(dist);
