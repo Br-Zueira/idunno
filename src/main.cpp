@@ -55,7 +55,7 @@ int main() {
     // Window loop
     while (!WindowShouldClose()) {
         // Updates screen dimension data
-        if (IsWindowResized) {
+        if (IsWindowResized()) {
             screenWidth = GetScreenWidth();
             screenHeight = GetScreenHeight();
 

@@ -41,33 +41,69 @@ float sdfPlane(vec3 dotPos) {
     return abs(dotPos.y) - 0.25;
 }
 
+// Helper for a crisp 3D wireframe box
+float sdBoxFrame3D(vec3 p, vec3 b, float e) {
+    p = abs(p) - b;
+    vec3 q = abs(p + e) - e;
+    return min(min(
+        length(max(vec3(p.x, q.y, q.z), 0.0)) + min(max(p.x, max(q.y, q.z)), 0.0),
+        length(max(vec3(q.x, p.y, q.z), 0.0)) + min(max(q.x, max(p.y, q.z)), 0.0)),
+        length(max(vec3(q.x, q.y, p.z), 0.0)) + min(max(q.x, max(q.y, p.z)), 0.0));
+}
+
 float sdfTesseract(vec4 scale, vec3 cubePos, float wFac, float wFac2, vec3 dotPos) {
-    // Transform dot coordinate into cube relative coordinates
     vec3 p = dotPos - cubePos;
 
-    // Lift the 3D point into the 4th dimension, where W pos is dictated by time
-    vec4 p4 = vec4(p, 0.0f);
+    // 1. Define the 8 corners of a 3D cube, duplicated at W = +1 and W = -1 (16 vertices total)
+    // We can fold X, Y, Z with abs() so we only need to check the positive octant!
+    vec3 q = abs(p);
+    
+    // Angle setup for 4D rotations (XW and YW)
+    float a1 = u_time * wFac;
+    float c1 = cos(a1), s1 = sin(a1);
+    float a2 = u_time * wFac2;
+    float c2 = cos(a2), s2 = sin(a2);
 
-    float angle = u_time * wFac;
-    float c = cos(angle);
-    float s = sin(angle);
+    // Project the two 4D hyper-faces (w = +scale.w and w = -scale.w) into 3D space
+    // For a classic tesseract projection, we need the inner & outer 3D cubes + connecting struts
+    float wDist = scale.w * 2.5; // Camera distance in 4D (controls inner cube size)
+    
+    // Project 4D vertex (+scale.xyz, +scale.w) and (+scale.xyz, -scale.w)
+    vec4 vPos = vec4(scale.xyz,  scale.w);
+    vec4 vNeg = vec4(scale.xyz, -scale.w);
 
-    // 1. Rotate in XW plane
-    vec4 temp = p4;
-    p4.x = c * temp.x - s * temp.w;
-    p4.w = s * temp.x + c * temp.w;
+    // Rotate both in XW
+    vPos.xw = mat2(c1, -s1, s1, c1) * vPos.xw;
+    vNeg.xw = mat2(c1, -s1, s1, c1) * vNeg.xw;
+    
+    // Rotate both in YW
+    vPos.yw = mat2(c2, -s2, s2, c2) * vPos.yw;
+    vNeg.yw = mat2(c2, -s2, s2, c2) * vNeg.yw;
 
-    // 2. Rotate in YW plane (use a slightly offset angle for complex tumbling)
-    float angle2 = u_time * wFac2;
-    float c2 = cos(angle2);
-    float s2 = sin(angle2);
-    temp = p4;
-    p4.y = c2 * temp.y - s2 * temp.w;
-    p4.w = s2 * temp.y + c2 * temp.w;
+    // Perspective divide from 4D -> 3D
+    vec3 p3Pos = vPos.xyz * (wDist / (wDist - vPos.w));
+    vec3 p3Neg = vNeg.xyz * (wDist / (wDist - vNeg.w));
 
-    // Almost standard 3D box SDF formula, but with 4D axis
-    vec4 d = abs(p4) - scale;
-    return length(max(d, 0.0)) + min(max(d.x, max(d.y, max(d.z, d.w))), 0.0);
+    float thickness = 0.25;
+
+    // 1. Diagonal struts connecting the inner and outer projected cubes
+    vec3 pa = q - p3Neg;
+    vec3 ba = p3Pos - p3Neg;
+    float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    float strut = length(pa - ba * h) - thickness;
+
+    // 2. Edges of the two projected cubes (in the folded octant)
+    // Distance from q to the axis-aligned edges meeting at p3Pos and p3Neg
+    vec3 dPos = abs(q - p3Pos);
+    float edgesPos = min(min(
+        length(vec2(dPos.y, dPos.z)) * step(q.x, abs(p3Pos.x)),
+        length(vec2(dPos.x, dPos.z)) * step(q.y, abs(p3Pos.y))),
+        length(vec2(dPos.x, dPos.y)) * step(q.z, abs(p3Pos.z)));
+    // Use proper box frame for exact axis-aligned edges when not skewed:
+    float box1 = sdBoxFrame3D(p, abs(p3Pos), thickness);
+    float box2 = sdBoxFrame3D(p, abs(p3Neg), thickness);
+
+    return min(min(box1, box2), strut);
 }
 
 vec4 eulerToQuarternion(vec3 angles) {
